@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Scan> Scans => Set<Scan>();
     public DbSet<ScanResult> ScanResults => Set<ScanResult>();
+    public DbSet<Target> Targets => Set<Target>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,6 +30,14 @@ public class AppDbContext : DbContext
             entity.Property(r => r.Severity).HasMaxLength(20);
             entity.Property(r => r.AlertName).HasMaxLength(512);
             entity.Property(r => r.Url).HasMaxLength(2048);
+        });
+
+        modelBuilder.Entity<Target>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Name).IsRequired().HasMaxLength(200);
+            entity.Property(t => t.Address).IsRequired().HasMaxLength(2048);
+            entity.Property(t => t.Description).HasMaxLength(500);
         });
     }
 }
