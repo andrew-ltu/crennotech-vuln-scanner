@@ -1,124 +1,68 @@
-using Hangfire;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using VulnScanner.Domain.Entities;
 using VulnScanner.Domain.Enums;
 using VulnScanner.Infrastructure.Data;
-using VulnScanner.Jobs;
- 
-namespace VulnScanner.API.Controllers;
- 
-[ApiController]
-[Route("api/[controller]")]
-public class ScansController : ControllerBase
+using VulnScanner.Services.Interfaces;
+
+namespace VulnScanner.Jobs;
+
+public class ScanJob
 {
     private readonly AppDbContext _db;
- 
-    public ScansController(AppDbContext db)
+    private readonly IZapService _zap;
+    private readonly IScanResultService _results;
+    private readonly IRawScanOutputService _rawOutput;
+    private readonly ILogger<ScanJob> _logger;
+
+    public ScanJob(
+        AppDbContext db,
+        IZapService zap,
+        IScanResultService results,
+        IRawScanOutputService rawOutput,
+        ILogger<ScanJob> logger)
     {
         _db = db;
+        _zap = zap;
+        _results = results;
+        _rawOutput = rawOutput;
+        _logger = logger;
     }
- 
-    // POST /api/scans
-    // CREN-88: Accepts either a free-text TargetUrl or a predefined TargetId
-    [HttpPost]
-    public async Task<IActionResult> TriggerScan([FromBody] ScanRequest request)
+
+    public async Task ExecuteAsync(int scanId)
     {
-        string resolvedUrl;
- 
-        if (request.TargetId.HasValue)
+        var scan = await _db.Scans.FindAsync(scanId);
+        if (scan == null)
         {
-            var target = await _db.Targets.FindAsync(request.TargetId.Value);
-            if (target == null)
-                return NotFound(new { message = $"Target with ID {request.TargetId} not found." });
- 
-            resolvedUrl = target.Address;
+            _logger.LogWarning("Scan {ScanId} not found.", scanId);
+            return;
         }
-        else if (!string.IsNullOrWhiteSpace(request.TargetUrl))
-        {
-            resolvedUrl = request.TargetUrl.Trim();
-        }
-        else
-        {
-            return BadRequest("Provide either a TargetUrl or a TargetId.");
-        }
- 
-        var scan = new Scan { TargetUrl = resolvedUrl };
-        _db.Scans.Add(scan);
+
+        // Queued → Running
+        scan.Status = ScanStatus.Running;
+        scan.StartedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
- 
-        BackgroundJob.Enqueue<ScanJob>(job => job.ExecuteAsync(scan.Id));
- 
-        return CreatedAtAction(nameof(GetScan), new { id = scan.Id }, new
+
+        try
         {
-            scan.Id,
-            Status = scan.Status.ToString(),
-            scan.TargetUrl,
-            scan.CreatedAt
-        });
-    }
- 
-    // GET /api/scans/targets
-    // CREN-88: Returns predefined targets for the frontend dropdown
-    [HttpGet("targets")]
-    public async Task<IActionResult> GetTargets()
-    {
-        var targets = await _db.Targets
-            .OrderBy(t => t.Name)
-            .Select(t => new { t.Id, t.Name, t.Address, t.Description })
-            .ToListAsync();
- 
-        return Ok(targets);
-    }
- 
-    // GET /api/scans
-    [HttpGet]
-    public async Task<IActionResult> GetAllScans()
-    {
-        var scans = await _db.Scans
-            .OrderByDescending(s => s.CreatedAt)
-            .Select(s => new { s.Id, Status = s.Status.ToString(), s.TargetUrl, s.CreatedAt, s.CompletedAt })
-            .ToListAsync();
- 
-        return Ok(scans);
-    }
- 
-    // GET /api/scans/{id}
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetScan(int id)
-    {
-        var scan = await _db.Scans.FindAsync(id);
-        if (scan == null) return NotFound();
- 
-        return Ok(new { scan.Id, Status = scan.Status.ToString(), scan.TargetUrl, scan.CreatedAt, scan.StartedAt, scan.CompletedAt, scan.ErrorMessage });
-    }
- 
-    // GET /api/scans/{id}/status
-    [HttpGet("{id}/status")]
-    public async Task<IActionResult> GetStatus(int id)
-    {
-        var scan = await _db.Scans.FindAsync(id);
-        if (scan == null) return NotFound();
- 
-        return Ok(new { scan.Id, Status = scan.Status.ToString(), scan.StartedAt, scan.CompletedAt, scan.ErrorMessage });
-    }
- 
-    // DELETE /api/scans/{id}
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> CancelScan(int id)
-    {
-        var scan = await _db.Scans.FindAsync(id);
-        if (scan == null) return NotFound();
- 
-        if (scan.Status != ScanStatus.Queued)
-            return BadRequest("Only queued scans can be cancelled.");
- 
-        scan.Status = ScanStatus.Failed;
-        scan.ErrorMessage = "Cancelled by user.";
+            // Run ZAP and capture raw output
+            var zapJson = await _zap.RunScanAsync(scan.TargetUrl, scanId);
+
+            // Save raw output before parsing (CREN-89)
+            await _rawOutput.SaveRawOutputAsync(scanId, zapJson);
+
+            // Parse and store structured results (CREN-90)
+            await _results.SaveResultsAsync(scanId, zapJson);
+
+            // Running → Completed
+            scan.Status = ScanStatus.Completed;
+            scan.CompletedAt = DateTime.UtcNow;
+            _logger.LogInformation("Scan {ScanId} completed successfully.", scanId);
+        }
+        catch (Exception ex)
+        {
+            scan.Status = ScanStatus.Failed;
+            scan.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Scan {ScanId} failed.", scanId);
+        }
+
         await _db.SaveChangesAsync();
- 
-        return Ok(new { message = $"Scan {id} cancelled." });
     }
 }
- 
-public record ScanRequest(string? TargetUrl, int? TargetId);
