@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Scan> Scans => Set<Scan>();
     public DbSet<ScanResult> ScanResults => Set<ScanResult>();
-    public DbSet<Target> Targets => Set<Target>();
+    public DbSet<RawScanOutput> RawScanOutputs => Set<RawScanOutput>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,12 +32,14 @@ public class AppDbContext : DbContext
             entity.Property(r => r.Url).HasMaxLength(2048);
         });
 
-        modelBuilder.Entity<Target>(entity =>
+        modelBuilder.Entity<RawScanOutput>(entity =>
         {
-            entity.HasKey(t => t.Id);
-            entity.Property(t => t.Name).IsRequired().HasMaxLength(200);
-            entity.Property(t => t.Address).IsRequired().HasMaxLength(2048);
-            entity.Property(t => t.Description).HasMaxLength(500);
+            entity.HasKey(r => r.Id);
+            entity.HasOne(r => r.Scan)
+                  .WithMany()
+                  .HasForeignKey(r => r.ScanId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(r => r.ScannerName).HasMaxLength(100);
         });
     }
 }
