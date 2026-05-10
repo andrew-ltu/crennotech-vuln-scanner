@@ -30,6 +30,7 @@ builder.Services.AddHttpClient<IZapService, ZapService>();
 builder.Services.AddScoped<ScanJob>();
 builder.Services.AddScoped<IZapService, ZapService>();
 builder.Services.AddScoped<IScanResultService, ScanResultService>();
+builder.Services.AddScoped<IScanResultFormatterService, ScanResultFormatterService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
