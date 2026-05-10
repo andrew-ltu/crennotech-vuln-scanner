@@ -4,19 +4,19 @@ Internal vulnerability scanning platform built for ISO 27001 compliance.
 
 ## Tech Stack
 
-- **Backend** — .NET 8 Web API
-- **Frontend** — React
-- **Database** — SQL Server
-- **Background Jobs** — Hangfire
-- **Scanner** — OWASP ZAP
+- **Backend** : .NET 8 Web API
+- **Frontend** : React
+- **Database** : SQL Server
+- **Background Jobs** : Hangfire
+- **Scanner** : OWASP ZAP
 
 ## Project Structure
 
-- `VulnScanner.API` — REST API controllers and routing
-- `VulnScanner.Domain` — Entities and enums
-- `VulnScanner.Infrastructure` — EF Core DbContext and migrations
-- `VulnScanner.Services` — Business logic and scanner integration
-- `VulnScanner.Jobs` — Background scan job execution
+- `VulnScanner.API` : REST API controllers and routing
+- `VulnScanner.Domain` : Entities and enums
+- `VulnScanner.Infrastructure` : EF Core DbContext and migrations
+- `VulnScanner.Services` : Business logic and scanner integration
+- `VulnScanner.Jobs` : Background scan job execution
 
 ## Features
 
