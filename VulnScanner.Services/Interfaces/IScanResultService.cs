@@ -5,5 +5,5 @@ namespace VulnScanner.Services.Interfaces;
 public interface IScanResultService
 {
     Task SaveResultsAsync(int scanId, string zapJson);
-    Task<IEnumerable<ScanResult>> GetResultsAsync(int scanId);
+    Task<IReadOnlyList<ScanResult>> GetResultsAsync(int scanId);
 }

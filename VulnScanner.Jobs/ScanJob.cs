@@ -1,9 +1,14 @@
+using Microsoft.Extensions.Logging;
 using VulnScanner.Domain.Enums;
 using VulnScanner.Infrastructure.Data;
 using VulnScanner.Services.Interfaces;
 
 namespace VulnScanner.Jobs;
 
+/// <summary>
+/// Hangfire background job: orchestrates a single scan end-to-end.
+/// Queued -> Running -> (Completed | Failed).
+/// </summary>
 public class ScanJob
 {
     private readonly AppDbContext _db;
@@ -35,23 +40,25 @@ public class ScanJob
             return;
         }
 
-        // Queued → Running
+        // Don't re-run cancelled / completed scans.
+        if (scan.Status is ScanStatus.Completed or ScanStatus.Failed)
+        {
+            _logger.LogInformation("Scan {ScanId} already in terminal state {Status}; skipping.", scanId, scan.Status);
+            return;
+        }
+
         scan.Status = ScanStatus.Running;
         scan.StartedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
         try
         {
-            // Run ZAP and capture raw output
             var zapJson = await _zap.RunScanAsync(scan.TargetUrl, scanId);
 
-            // Save raw output before parsing (CREN-89)
+            // Save raw output first so we always have evidence even if parsing fails.
             await _rawOutput.SaveRawOutputAsync(scanId, zapJson);
-
-            // Parse and store structured results (CREN-90)
             await _results.SaveResultsAsync(scanId, zapJson);
 
-            // Running → Completed
             scan.Status = ScanStatus.Completed;
             scan.CompletedAt = DateTime.UtcNow;
             _logger.LogInformation("Scan {ScanId} completed successfully.", scanId);
@@ -59,6 +66,7 @@ public class ScanJob
         catch (Exception ex)
         {
             scan.Status = ScanStatus.Failed;
+            scan.CompletedAt = DateTime.UtcNow;
             scan.ErrorMessage = ex.Message;
             _logger.LogError(ex, "Scan {ScanId} failed.", scanId);
         }

@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using VulnScanner.Domain.Entities;
 using VulnScanner.Infrastructure.Data;
 using VulnScanner.Services.Interfaces;
@@ -38,7 +40,14 @@ public class RawScanOutputService : IRawScanOutputService
 
     public async Task<string?> GetRawOutputAsync(int scanId)
     {
-        var output = await _db.RawScanOutputs.FindAsync(scanId);
+        // Look up by ScanId (FK), not Id (PK). Take the most recent capture
+        // in case a scan was retried and produced multiple raw outputs.
+        var output = await _db.RawScanOutputs
+            .AsNoTracking()
+            .Where(r => r.ScanId == scanId)
+            .OrderByDescending(r => r.CapturedAt)
+            .FirstOrDefaultAsync();
+
         return output?.RawJson;
     }
 }

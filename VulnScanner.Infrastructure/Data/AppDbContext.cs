@@ -17,7 +17,10 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(s => s.Id);
             entity.Property(s => s.TargetUrl).IsRequired().HasMaxLength(2048);
-            entity.Property(s => s.Status).HasConversion<string>();
+            entity.Property(s => s.Status).HasConversion<string>().HasMaxLength(20);
+            entity.Property(s => s.ErrorMessage).HasMaxLength(4000);
+            entity.HasIndex(s => s.CreatedAt);
+            entity.HasIndex(s => s.Status);
         });
 
         modelBuilder.Entity<ScanResult>(entity =>
@@ -30,6 +33,10 @@ public class AppDbContext : DbContext
             entity.Property(r => r.Severity).HasMaxLength(20);
             entity.Property(r => r.AlertName).HasMaxLength(512);
             entity.Property(r => r.Url).HasMaxLength(2048);
+            entity.Property(r => r.CveId).HasMaxLength(50);
+            // Free-text columns: leave as nvarchar(max).
+            entity.HasIndex(r => r.ScanId);
+            entity.HasIndex(r => r.Severity);
         });
 
         modelBuilder.Entity<RawScanOutput>(entity =>
@@ -40,6 +47,7 @@ public class AppDbContext : DbContext
                   .HasForeignKey(r => r.ScanId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.Property(r => r.ScannerName).HasMaxLength(100);
+            entity.HasIndex(r => r.ScanId);
         });
     }
 }

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>VulnScanner.Jobs</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VulnScanner.Domain\VulnScanner.Domain.csproj" />
+    <ProjectReference Include="..\VulnScanner.Infrastructure\VulnScanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\VulnScanner.Services\VulnScanner.Services.csproj" />
+  </ItemGroup>
+
+</Project>

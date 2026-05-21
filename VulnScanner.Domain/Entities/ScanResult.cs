@@ -1,43 +1,33 @@
 namespace VulnScanner.Domain.Entities;
 
+/// <summary>
+/// A single vulnerability finding produced by a scan. One <see cref="Scan"/>
+/// may have many <see cref="ScanResult"/> rows (one per ZAP alert).
+/// </summary>
 public class ScanResult
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid ScanJobId { get; set; }
-    public string TargetEndpoint { get; set; } = string.Empty;
-    public ScanStatus Status { get; set; }
-    public DateTime StartedAt { get; set; }
-    public DateTime? CompletedAt { get; set; }
-    public List<ScanFinding> Findings { get; set; } = new();
-    public ScanSummary Summary { get; set; } = new();
-}
+    public int Id { get; set; }
 
-public class ScanFinding
-{
-    public string VulnerabilityId { get; set; } = string.Empty; // e.g. CVE-2024-1234
-    public string Title { get; set; } = string.Empty;
-    public Severity Severity { get; set; }
+    public int ScanId { get; set; }
+    public Scan Scan { get; set; } = null!;
+
+    /// <summary>Human-readable name of the alert, e.g. "Cross-Site Scripting (Reflected)".</summary>
+    public string AlertName { get; set; } = string.Empty;
+
+    /// <summary>Critical, High, Medium, Low, Info. Stored as a string for query/filter friendliness.</summary>
+    public string Severity { get; set; } = "Info";
+
+    /// <summary>The URL the alert was raised against.</summary>
+    public string Url { get; set; } = string.Empty;
+
     public string Description { get; set; } = string.Empty;
-    public string AffectedComponent { get; set; } = string.Empty;
-    public string Remediation { get; set; } = string.Empty;
-    public string RawOutput { get; set; } = string.Empty;
-}
+    public string Solution { get; set; } = string.Empty;
+    public string Evidence { get; set; } = string.Empty;
+    public string Request { get; set; } = string.Empty;
+    public string Response { get; set; } = string.Empty;
 
-public class ScanSummary
-{
-    public int TotalFindings { get; set; }
-    public int Critical { get; set; }
-    public int High { get; set; }
-    public int Medium { get; set; }
-    public int Low { get; set; }
-    public int Informational { get; set; }
-}
+    /// <summary>CVE identifier(s) if reported by ZAP, otherwise empty.</summary>
+    public string CveId { get; set; } = string.Empty;
 
-public enum Severity
-{
-    Informational,
-    Low,
-    Medium,
-    High,
-    Critical
+    public DateTime DetectedAt { get; set; } = DateTime.UtcNow;
 }

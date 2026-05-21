@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>VulnScanner.API</RootNamespace>
+    <AssemblyName>VulnScanner.API</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.14" />
+    <PackageReference Include="Hangfire.SqlServer" Version="1.8.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VulnScanner.Domain\VulnScanner.Domain.csproj" />
+    <ProjectReference Include="..\VulnScanner.Infrastructure\VulnScanner.Infrastructure.csproj" />
+    <ProjectReference Include="..\VulnScanner.Services\VulnScanner.Services.csproj" />
+    <ProjectReference Include="..\VulnScanner.Jobs\VulnScanner.Jobs.csproj" />
+  </ItemGroup>
+
+</Project>
