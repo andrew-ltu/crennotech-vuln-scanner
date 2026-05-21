@@ -96,7 +96,3 @@ See `docs/user-manual.md` for full request/response examples and the Postman col
 | `docs/system-maintenance.md`   | Install, update, patch, deploy, dependencies, CVEs     |
 | `docs/user-manual.md`          | End-user workflows via Swagger / Postman                |
 | `docs/design.md`               | Architecture, threat model, UML, ER diagrams, rationale |
-
-## License
-
-See `LICENSE` for terms.
