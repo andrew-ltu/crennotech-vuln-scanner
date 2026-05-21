@@ -99,4 +99,4 @@ See `docs/user-manual.md` for full request/response examples and the Postman col
 
 ## License
 
-This software is developed as part of a La Trobe University CSE3PRA group project. See `LICENSE` for terms.
+See `LICENSE` for terms.
